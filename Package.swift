@@ -7,7 +7,7 @@ let package = Package(
   name: "Swiftchain",
   platforms: [
     .macOS(.v13),
-    .iOS(.v15),
+    .iOS(.v16),
   ],
   products: [
     // Products define the executables and libraries a package produces, making them visible to other packages.
@@ -18,11 +18,17 @@ let package = Package(
       name: "SwiftchainOpenAI",
       targets: ["SwiftchainOpenAI"]),
   ],
+  dependencies: [
+    .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
+  ],
   targets: [
     // Targets are the basic building blocks of a package, defining a module or a test suite.
     // Targets can depend on other targets in this package and products from dependencies.
     .target(
-      name: "Swiftchain"
+      name: "Swiftchain",
+      dependencies: [
+        .product(name: "Logging", package: "swift-log"),
+      ]
     ),
     .target(
       name: "SwiftchainOpenAI",
