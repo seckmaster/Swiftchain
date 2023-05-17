@@ -8,29 +8,59 @@
 import Foundation
 
 @dynamicCallable
-public struct PromptTemplate {
+public protocol PromptTemplateConforming<Prompt> where Prompt: Encodable {
+  associatedtype Prompt
+  
+  var variableRegex: Regex<(Substring, variable: Substring)> { get }
+  var template: String { get }
+  var variables: [Substring] { get }
+  
+  func format(
+    arguments: [String: String]
+  ) -> Prompt
+  
+  func format(
+    arguments: KeyValuePairs<String, String>
+  ) -> Prompt
+  
+  func dynamicallyCall(withKeywordArguments args: KeyValuePairs<String, String>) -> Prompt
+}
+
+public extension PromptTemplateConforming {
+  func format(
+    arguments: KeyValuePairs<String, String>
+  ) -> Prompt {
+    format(arguments: arguments.reduce(into: [:]) { $0[$1.key] = $1.value })
+  }
+  
+  func dynamicallyCall(withKeywordArguments args: KeyValuePairs<String, String>) -> Prompt {
+    format(arguments: args)
+  }
+}
+
+@dynamicCallable
+public struct PromptTemplate: PromptTemplateConforming {
+  public typealias Prompt = String
   public typealias Regex = _StringProcessing.Regex<(Substring, variable: Substring)>
   
   public let variableRegex: Regex
-  public let prompt: String
+  public let template: String
   public let variables: [Substring]
   
   public init(
     variableRegex: Regex,
-    prompt: String
+    template: String
   ) {
     self.variableRegex = variableRegex
-    self.prompt = prompt
-    self.variables = prompt.matches(of: variableRegex)
+    self.template = template
+    self.variables = template.matches(of: variableRegex)
       .map { $0.output.variable }
   }
-}
-
-public extension PromptTemplate {
-  func format(
+  
+  public func format(
     arguments: [String: String]
   ) -> String {
-    var formatedPrompt = prompt
+    var formatedPrompt = template
     var prevFailedMatch: Range<String.Index>?
     while true {
       let idx = prevFailedMatch.map { $0.upperBound } ?? formatedPrompt.startIndex
@@ -51,14 +81,33 @@ public extension PromptTemplate {
     }
     return formatedPrompt
   }
+}
+
+public struct PromptTemplateAdapter<T: PromptTemplateConforming, Prompt: Encodable>: PromptTemplateConforming {
+  public let promptTemplate: T
+  public let adapter: (T.Prompt) -> Prompt
   
-  func format(
-    arguments: KeyValuePairs<String, String>
-  ) -> String {
-    format(arguments: arguments.reduce(into: [:]) { $0[$1.key] = $1.value })
+  public init(
+    promptTemplate: T,
+    adapter: @escaping (T.Prompt) -> Prompt
+  ) {
+    self.promptTemplate = promptTemplate
+    self.adapter = adapter
   }
   
-  func dynamicallyCall(withKeywordArguments args: KeyValuePairs<String, String>) async throws -> String {
-    format(arguments: args)
+  public var variableRegex: Regex<(Substring, variable: Substring)> {
+    promptTemplate.variableRegex
+  }
+  
+  public var template: String {
+    promptTemplate.template
+  }
+  
+  public var variables: [Substring] {
+    promptTemplate.variables
+  }
+  
+  public func format(arguments: [String : String]) -> Prompt {
+    adapter(promptTemplate.format(arguments: arguments))
   }
 }
