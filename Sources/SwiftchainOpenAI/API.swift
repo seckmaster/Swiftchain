@@ -14,23 +14,32 @@ func chat(
   variants: Int,
   messages: ChatOpenAILLM.Messages,
   apiKey: String
-) async throws -> [String] {
+) async throws -> [ChatOpenAILLM.Message] {
   struct Request: Encodable {
     let model: String
     let messages: [ChatOpenAILLM.Message]
     let temperature: Double
     let n: Int
   }
-  return try await call(
-    api: "https://api.openai.com/v1/chat/completions", 
+  struct Response: Decodable {
+    let choices: [Choice]
+  }
+  struct Choice: Decodable {
+    let message: ChatOpenAILLM.Message
+  }
+  let data = try await post(
+    to: "https://api.openai.com/v1/chat/completions", 
     request: Request(
       model: model, 
       messages: messages, 
       temperature: temperature,
       n: variants
     ), 
-    apiKey: apiKey
+    headers: ["Authorization": "Bearer \(apiKey)"]
   )
+  return try JSONDecoder().decode(Response.self, from: data)
+    .choices
+    .map { $0.message }
 }
 
 func completion(
@@ -46,31 +55,15 @@ func completion(
     let temperature: Double
     let n: Int
   }
-  return try await call(
-    api: "https://api.openai.com/v1/completions", 
-    request: Request(
-      model: model, 
-      prompt: prompt, 
-      temperature: temperature, 
-      n: variants
-    ), 
-    apiKey: apiKey
-  )
-}
-
-fileprivate func call<E: Encodable>(
-  api url: URL,
-  request: E,
-  apiKey: String
-) async throws -> [String] {
-  let data = try await post(
-    to: url, 
-    request: request,
-    headers: ["Authorization": "Bearer \(apiKey)"]
-  )
-  
-  guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { 
-    throw NSError()
-  }
-  return ((((json["choices"] as? [[String: Any]])?[0] as? [String: Any])?["message"] as? [String: Any])?["content"] as? String).map { [$0] } ?? []
+//  return try await call(
+//    api: "https://api.openai.com/v1/completions", 
+//    request: Request(
+//      model: model, 
+//      prompt: prompt, 
+//      temperature: temperature, 
+//      n: variants
+//    ), 
+//    apiKey: apiKey
+//  )
+  fatalError()
 }

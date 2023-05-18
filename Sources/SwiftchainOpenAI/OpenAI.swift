@@ -31,7 +31,7 @@ public struct ChatOpenAILLM: LLM {
     return try await invoke(messages: messages)
   }
   
-  public func invoke(_ request: Encodable) async throws -> [String] {
+  public func invoke(_ request: Encodable) async throws -> Messages {
     let messages = try validateRequest(request)
     return try await invoke(messages: messages, apiKey: apiKey)
   }
@@ -42,7 +42,7 @@ public struct ChatOpenAILLM: LLM {
     numberOfVariants: Int? = nil,
     model: String? = nil,
     apiKey: String? = nil
-  ) async throws -> [String] {
+  ) async throws -> Messages {
     guard let apiKey = apiKey ?? self.apiKey ?? ProcessInfo.processInfo.openAIApiKey else {
       throw Error.missingApiKey
     }
@@ -55,22 +55,22 @@ public struct ChatOpenAILLM: LLM {
     )
   }
   
-  public func dynamicallyCall(withKeywordArguments args: KeyValuePairs<String, String>) async throws -> Decodable {
+  public func dynamicallyCall(withKeywordArguments args: KeyValuePairs<String, Encodable>) async throws -> Messages {
     var apiKey = apiKey ?? ProcessInfo.processInfo.openAIApiKey
     var temperature = defaultTemperature
     var numberOfVariants = defaultNumberOfVariants
     var model = defaultModel
-    var request: String?
+    var request: Encodable?
     for arg in args {
       switch arg.key {
       case "apiKey":
-        apiKey = arg.value
+        apiKey = arg.value as? String ?? apiKey
       case "temperature":
-        temperature = Double(arg.value) ?? temperature
+        temperature = arg.value as? Double ?? temperature
       case "numberOfVariants":
-        numberOfVariants = Int(arg.value) ?? numberOfVariants
+        numberOfVariants = arg.value as? Int ?? numberOfVariants
       case "model":
-        model = arg.value
+        model = arg.value as? String ?? model
       case "request":
         request = arg.value
       case _:
@@ -87,13 +87,13 @@ public struct ChatOpenAILLM: LLM {
     return try await chat(
       model: model,
       temperature: temperature, 
-      variants: defaultNumberOfVariants, 
+      variants: numberOfVariants, 
       messages: messages,
       apiKey: apiKey
     )
   }
   
-  public func dynamicallyCall(_ messages: Messages) async throws -> [String] {
+  public func dynamicallyCall(_ messages: Messages) async throws -> Messages {
     try await invoke(messages: messages)
   }
 }

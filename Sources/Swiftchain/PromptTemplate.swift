@@ -11,7 +11,7 @@ import Foundation
 public protocol PromptTemplateConforming<Prompt> where Prompt: Encodable {
   associatedtype Prompt
   
-  var variableRegex: Regex<(Substring, variable: Substring)> { get }
+  var variableRegex: Regex<(Substring, Substring)> { get }
   var template: String { get }
   var variables: [Substring] { get }
   
@@ -41,7 +41,7 @@ public extension PromptTemplateConforming {
 @dynamicCallable
 public struct PromptTemplate: PromptTemplateConforming {
   public typealias Prompt = String
-  public typealias Regex = _StringProcessing.Regex<(Substring, variable: Substring)>
+  public typealias Regex = _StringProcessing.Regex<(Substring, Substring)>
   
   public let variableRegex: Regex
   public let template: String
@@ -54,7 +54,7 @@ public struct PromptTemplate: PromptTemplateConforming {
     self.variableRegex = variableRegex
     self.template = template
     self.variables = template.matches(of: variableRegex)
-      .map { $0.output.variable }
+      .map { $0.output.1 }
   }
   
   public func format(
@@ -68,9 +68,9 @@ public struct PromptTemplate: PromptTemplateConforming {
         break
       }
       
-      guard let value = arguments[String(match.output.variable)] else {
+      guard let value = arguments[String(match.output.1)] else {
         // TODO: - Throw error?
-        logger.warning("No value provided for variable: \(match.output.variable)")
+        logger.warning("No value provided for variable: \(match.output.1)")
         prevFailedMatch = match.range
         continue
       }
@@ -95,7 +95,7 @@ public struct PromptTemplateAdapter<T: PromptTemplateConforming, Prompt: Encodab
     self.adapter = adapter
   }
   
-  public var variableRegex: Regex<(Substring, variable: Substring)> {
+  public var variableRegex: Regex<(Substring, Substring)> {
     promptTemplate.variableRegex
   }
   
