@@ -9,6 +9,10 @@ import Swiftchain
 import Foundation
 
 public struct ChatOpenAILLM: LLM {
+  public struct Variants {
+    public let messages: [Message]
+  }
+  
   public let apiKey: String?
   public let defaultTemperature: Double
   public let defaultNumberOfVariants: Int
@@ -26,76 +30,74 @@ public struct ChatOpenAILLM: LLM {
     self.defaultModel = defaultModel
   }
   
-  public func invoke(_ request: Encodable) async throws -> Decodable {
-    let messages = try validateRequest(request)
-    return try await invoke(messages: messages)
-  }
-  
-  public func invoke(_ request: Encodable) async throws -> Messages {
-    let messages = try validateRequest(request)
-    return try await invoke(messages: messages, apiKey: apiKey)
+  public func invoke(_ request: Messages) async throws -> Variants {
+    try await invoke(
+      request,
+      temperature: nil
+    )
   }
   
   public func invoke(
-    messages: Messages,
+    _ request: Messages,
     temperature: Double? = nil,
     numberOfVariants: Int? = nil,
     model: String? = nil,
     apiKey: String? = nil
-  ) async throws -> Messages {
+  ) async throws -> Variants {
     guard let apiKey = apiKey ?? self.apiKey ?? ProcessInfo.processInfo.openAIApiKey else {
       throw Error.missingApiKey
     }
-    return try await chat(
+    let messages = try await chat(
       model: model ?? defaultModel,
       temperature: temperature ?? defaultTemperature, 
       variants: numberOfVariants ?? defaultNumberOfVariants, 
-      messages: messages,
+      messages: request,
       apiKey: apiKey
     )
+    return .init(messages: messages)
   }
   
-  public func dynamicallyCall(withKeywordArguments args: KeyValuePairs<String, Encodable>) async throws -> Messages {
-    var apiKey = apiKey ?? ProcessInfo.processInfo.openAIApiKey
-    var temperature = defaultTemperature
-    var numberOfVariants = defaultNumberOfVariants
-    var model = defaultModel
-    var request: Encodable?
-    for arg in args {
-      switch arg.key {
-      case "apiKey":
-        apiKey = arg.value as? String ?? apiKey
-      case "temperature":
-        temperature = arg.value as? Double ?? temperature
-      case "numberOfVariants":
-        numberOfVariants = arg.value as? Int ?? numberOfVariants
-      case "model":
-        model = arg.value as? String ?? model
-      case "request":
-        request = arg.value
-      case _:
-        continue
-      }
-    }
-    guard let apiKey = apiKey ?? ProcessInfo.processInfo.openAIApiKey else {
-      throw Error.missingApiKey
-    }
-    guard let request else {
-      throw Error.missingRequest
-    }
-    let messages = try validateRequest(request)
-    return try await chat(
-      model: model,
-      temperature: temperature, 
-      variants: numberOfVariants, 
-      messages: messages,
-      apiKey: apiKey
-    )
-  }
-  
-  public func dynamicallyCall(_ messages: Messages) async throws -> Messages {
-    try await invoke(messages: messages)
-  }
+//  public func dynamicallyCall(withKeywordArguments args: KeyValuePairs<String, Encodable>) async throws -> Messages {
+//    var apiKey = apiKey ?? ProcessInfo.processInfo.openAIApiKey
+//    var temperature = defaultTemperature
+//    var numberOfVariants = defaultNumberOfVariants
+//    var model = defaultModel
+//    var request: Encodable?
+//    for arg in args {
+//      switch arg.key {
+//      case "apiKey":
+//        apiKey = arg.value as? String ?? apiKey
+//      case "temperature":
+//        temperature = arg.value as? Double ?? temperature
+//      case "numberOfVariants":
+//        numberOfVariants = arg.value as? Int ?? numberOfVariants
+//      case "model":
+//        model = arg.value as? String ?? model
+//      case "request":
+//        request = arg.value
+//      case _:
+//        continue
+//      }
+//    }
+//    guard let apiKey = apiKey else {
+//      throw Error.missingApiKey
+//    }
+//    guard let request else {
+//      throw Error.missingRequest
+//    }
+//    let messages = try validateRequest(request)
+//    return try await chat(
+//      model: model,
+//      temperature: temperature, 
+//      variants: numberOfVariants, 
+//      messages: messages,
+//      apiKey: apiKey
+//    )
+//  }
+//  
+//  public func dynamicallyCall(_ messages: Messages) async throws -> Messages {
+//    try await invoke(messages: messages)
+//  }
 }
 
 public extension ChatOpenAILLM {
@@ -190,12 +192,12 @@ OpenAI chat based API's expect the following JSON schema:
 }
 
 extension ChatOpenAILLM {
-  func validateRequest(_ request: Encodable) throws -> Messages {
-    guard let messages = request as? Messages else {
-      throw Error.invalidRequest(type(of: request))
-    }
-    return messages
-  } 
+//  func validateRequest(_ request: Encodable) throws -> Messages {
+//    guard let messages = request as? Messages else {
+//      throw Error.invalidRequest(type(of: request))
+//    }
+//    return messages
+//  } 
 }
 
 extension ProcessInfo {
@@ -204,80 +206,80 @@ extension ProcessInfo {
   }
 }
 
-public struct OpenAILLM: LLM {
-  public let apiKey: String?
-  public let defaultTemperature: Double
-  public let defaultNumberOfVariants: Int
-  public let defaultModel: String
-  
-  public init(
-    apiKey: String? = nil, 
-    defaultTemperature: Double = 0.0, 
-    defaultNumberOfVariants: Int = 1,
-    defaultModel: String = "text-davinci-003"
-  ) {
-    self.apiKey = apiKey
-    self.defaultTemperature = defaultTemperature
-    self.defaultNumberOfVariants = defaultNumberOfVariants
-    self.defaultModel = defaultModel
-  }
-  
-  public func invoke(_ request: Encodable) async throws -> Decodable {
-    guard let prompt = request as? String ?? (request as? CustomStringConvertible)?.description else {
-      throw Error.invalidRequest(type(of: request))
-    }
-    return try await invoke(prompt: prompt)
-  }
-  
-  public func invoke(
-    prompt: String,
-    temperature: Double? = nil,
-    numberOfVariants: Int? = nil,
-    model: String? = nil,
-    apiKey: String? = nil
-  ) async throws -> [String] {
-    guard let apiKey = apiKey ?? self.apiKey ?? ProcessInfo.processInfo.openAIApiKey else {
-      throw Error.missingApiKey
-    }
-    return try await completion(
-      model: model ?? defaultModel,
-      temperature: temperature ?? defaultTemperature, 
-      variants: numberOfVariants ?? defaultNumberOfVariants, 
-      prompt: prompt,
-      apiKey: apiKey
-    )
-  }
-}
-
-public extension OpenAILLM {
-  enum Error: LocalizedError {
-    case missingApiKey
-    case invalidRequest(Encodable.Type)
-    case missingRequest
-    
-    public var errorDescription: String? {
-      switch self {
-      case .missingApiKey:
-        return "Could not locate OpenAI API key!"
-      case .invalidRequest(let type):
-        return "Could not convert \(type) to expected model."
-      case .missingRequest:
-        return "Request not present in **kwargs."
-      }
-    }
-    
-    public var recoverySuggestion: String? {
-      switch self {
-      case .missingApiKey:
-        return "Save your OpenAI API key as an environment variable or use it in the `ChatOpenAILLM` initializer."
-      case .invalidRequest:
-        return """
-OpenAI completion based API's expect the argument to be a `String`.
-```
-"""
-      case .missingRequest:
-        return "Provide a value with 'request' key inside the **kwargs."
-      }
-    }
-  }
-}
+//public struct OpenAILLM: LLM {
+//  public let apiKey: String?
+//  public let defaultTemperature: Double
+//  public let defaultNumberOfVariants: Int
+//  public let defaultModel: String
+//  
+//  public init(
+//    apiKey: String? = nil, 
+//    defaultTemperature: Double = 0.0, 
+//    defaultNumberOfVariants: Int = 1,
+//    defaultModel: String = "text-davinci-003"
+//  ) {
+//    self.apiKey = apiKey
+//    self.defaultTemperature = defaultTemperature
+//    self.defaultNumberOfVariants = defaultNumberOfVariants
+//    self.defaultModel = defaultModel
+//  }
+//  
+//  public func invoke(_ request: Encodable) async throws -> Decodable {
+//    guard let prompt = request as? String ?? (request as? CustomStringConvertible)?.description else {
+//      throw Error.invalidRequest(type(of: request))
+//    }
+//    return try await invoke(prompt: prompt)
+//  }
+//  
+//  public func invoke(
+//    prompt: String,
+//    temperature: Double? = nil,
+//    numberOfVariants: Int? = nil,
+//    model: String? = nil,
+//    apiKey: String? = nil
+//  ) async throws -> [String] {
+//    guard let apiKey = apiKey ?? self.apiKey ?? ProcessInfo.processInfo.openAIApiKey else {
+//      throw Error.missingApiKey
+//    }
+//    return try await completion(
+//      model: model ?? defaultModel,
+//      temperature: temperature ?? defaultTemperature, 
+//      variants: numberOfVariants ?? defaultNumberOfVariants, 
+//      prompt: prompt,
+//      apiKey: apiKey
+//    )
+//  }
+//}
+//
+//public extension OpenAILLM {
+//  enum Error: LocalizedError {
+//    case missingApiKey
+//    case invalidRequest(Encodable.Type)
+//    case missingRequest
+//    
+//    public var errorDescription: String? {
+//      switch self {
+//      case .missingApiKey:
+//        return "Could not locate OpenAI API key!"
+//      case .invalidRequest(let type):
+//        return "Could not convert \(type) to expected model."
+//      case .missingRequest:
+//        return "Request not present in **kwargs."
+//      }
+//    }
+//    
+//    public var recoverySuggestion: String? {
+//      switch self {
+//      case .missingApiKey:
+//        return "Save your OpenAI API key as an environment variable or use it in the `ChatOpenAILLM` initializer."
+//      case .invalidRequest:
+//        return """
+//OpenAI completion based API's expect the argument to be a `String`.
+//```
+//"""
+//      case .missingRequest:
+//        return "Provide a value with 'request' key inside the **kwargs."
+//      }
+//    }
+//  }
+//}

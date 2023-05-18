@@ -7,15 +7,65 @@
 
 import Foundation
 
-@dynamicCallable
-public protocol LLM {
-  func invoke(_ request: Encodable) async throws -> Decodable
-  func dynamicallyCall(withKeywordArguments args: KeyValuePairs<String, Encodable>) async throws -> Decodable
+public protocol LLM<Input, Output> {
+  associatedtype Input
+  associatedtype Output
+  
+  func invoke(_ request: Input) async throws -> Output
 }
 
-public extension LLM {
-  func dynamicallyCall(withKeywordArguments args: KeyValuePairs<String, Encodable>) async throws -> Decodable {
-    guard let request = args.first(where: { $0.key == "request" })?.value else { throw NSError() }
-    return try await invoke(request)
+public struct LLMIOModifier<Input, Output, LLM: Swiftchain.LLM>: Swiftchain.LLM {
+  public let llm: LLM
+  public let inputModifier: (Input) -> LLM.Input
+  public let outputModifier: (LLM.Output) -> Output
+  
+  public init(
+    llm: LLM,
+    inputModifier: @escaping (Input) -> LLM.Input,
+    outputModifier: @escaping (LLM.Output) -> Output
+  ) {
+    self.llm = llm
+    self.inputModifier = inputModifier
+    self.outputModifier = outputModifier
+  }
+  
+  public func invoke(_ request: Input) async throws -> Output {
+    let out = try await llm.invoke(inputModifier(request))
+    return outputModifier(out)
+  }
+}
+
+public struct LLMIModifier<Input, LLM: Swiftchain.LLM>: Swiftchain.LLM {
+  public let llm: LLM
+  public let inputModifier: (Input) -> LLM.Input
+  
+  public init(
+    llm: LLM,
+    inputModifier: @escaping (Input) -> LLM.Input
+  ) {
+    self.llm = llm
+    self.inputModifier = inputModifier
+  }
+  
+  public func invoke(_ request: Input) async throws -> LLM.Output {
+    try await llm.invoke(inputModifier(request))
+  }
+}
+
+public struct LLMOModifier<Output, LLM: Swiftchain.LLM>: Swiftchain.LLM {
+  public let llm: LLM
+  public let outputModifier: (LLM.Output) -> Output
+  
+  public init(
+    llm: LLM,
+    outputModifier: @escaping (LLM.Output) -> Output
+  ) {
+    self.llm = llm
+    self.outputModifier = outputModifier
+  }
+  
+  public func invoke(_ request: LLM.Input) async throws -> Output {
+    let out = try await llm.invoke(request)
+    return outputModifier(out)
   }
 }

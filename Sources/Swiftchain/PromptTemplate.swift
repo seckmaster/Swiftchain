@@ -8,7 +8,7 @@
 import Foundation
 
 @dynamicCallable
-public protocol PromptTemplateConforming<Prompt> where Prompt: Encodable {
+public protocol PromptTemplateConforming<Prompt> {
   associatedtype Prompt
   
   var variableRegex: Regex<(Substring, Substring)> { get }
@@ -22,6 +22,8 @@ public protocol PromptTemplateConforming<Prompt> where Prompt: Encodable {
   func format(
     arguments: KeyValuePairs<String, String>
   ) -> Prompt
+  
+  func encode(input: String) -> Prompt
   
   func dynamicallyCall(withKeywordArguments args: KeyValuePairs<String, String>) -> Prompt
 }
@@ -81,9 +83,13 @@ public struct PromptTemplate: PromptTemplateConforming {
     }
     return formatedPrompt
   }
+  
+  public func encode(input: String) -> String {
+    input
+  }
 }
 
-public struct PromptTemplateAdapter<T: PromptTemplateConforming, Prompt: Encodable>: PromptTemplateConforming {
+public struct PromptTemplateAdapter<T: PromptTemplateConforming, Prompt>: PromptTemplateConforming {
   public let promptTemplate: T
   public let adapter: (T.Prompt) -> Prompt
   
@@ -109,5 +115,9 @@ public struct PromptTemplateAdapter<T: PromptTemplateConforming, Prompt: Encodab
   
   public func format(arguments: [String : String]) -> Prompt {
     adapter(promptTemplate.format(arguments: arguments))
+  }
+  
+  public func encode(input: String) -> Prompt {
+    adapter(promptTemplate.encode(input: input))
   }
 }
