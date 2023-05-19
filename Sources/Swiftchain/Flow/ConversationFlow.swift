@@ -12,55 +12,55 @@ import Foundation
 ///
 /// Here is an example of how to initialize and use a `ConversationFlow`:
 ///
-/// ```swift
-/// // Create an instance of the LLM with OpenAI's GPT-4 model and an API key.
-/// let llm = ChatOpenAILLM(apiKey: "your api key")
+///    ```swift
+///    // Create an instance of the LLM with OpenAI's GPT-4 model and an API key.
+///    let llm = ChatOpenAILLM(apiKey: "your api key")
 ///
-/// // Create a prompt template adapter with a conversation format.
-/// let prompt = PromptTemplateAdapter(
-///   promptTemplate: PromptTemplate(
-///     variableRegex: .init {
-///       "{"
-///       Capture(OneOrMore(.word))
-///       "}"
-///     },
-///     template: """
-///     You are a helpful assistant expert in programming.
+///    // Create a prompt template adapter with a conversation format.
+///    let prompt = PromptTemplateAdapter(
+///      promptTemplate: PromptTemplate(
+///        variableRegex: .init {
+///          "{"
+///          Capture(OneOrMore(.word))
+///          "}"
+///        },
+///        template: """
+///        You are a helpful assistant expert in programming.
 ///
-///     History:
-///     {history}
+///        History:
+///        {history}
 ///
-///     Conversation:
-///     Human: {input}
-///     AI:
-///     """
-///   ),
-///   adapter: { ChatOpenAILLM.Message(role: .user, content: $0) }
-/// )
+///        Conversation:
+///        Human: {input}
+///        AI:
+///        """
+///      ),
+///      adapter: { ChatOpenAILLM.Message(role: .user, content: $0) }
+///    )
 ///
-/// // Create a conversational LLM using the defined LLM, memory and prompt template.
-/// var conversationFlow = try ConversationFlow(
-///   promptTemplate: prompt, 
-///   memory: ConversationMemory<ChatOpenAILLM.Message, String>(memoryVariableKey: "history"), 
-///   llm: LLMIOModifier(
-///     llm: llm,
-///     inputModifier: { [$0] },
-///     outputModifier: { $0.messages[0] }
-///   )
-/// )
+///    // Create a conversational LLM using the defined LLM, memory and prompt template.
+///    var conversationFlow = try ConversationFlow(
+///      promptTemplate: prompt, 
+///      memory: ConversationMemory<ChatOpenAILLM.Message, String>(memoryVariableKey: "history"), 
+///      llm: LLMIOModifier(
+///        llm: llm,
+///        inputModifier: { [$0] },
+///        outputModifier: { $0.messages[0] }
+///      )
+///    )
 ///
-/// // Use the conversational LLM in a loop, asking for user input and printing the model's response.
-/// do {
-///   while true {
-///     let result = try await conversationFlow.run(args: [
-///       "input": readLine()!
-///     ])
-///     print(result.content)
-///   }
-/// } catch {
-///   print(error)
-/// }
-/// ```
+///    // Use the conversational LLM in a loop, asking for user input and printing the model's response.
+///    do {
+///      while true {
+///        let result = try await conversationFlow.run(args: [
+///          "input": readLine()!
+///        ])
+///        print(result.content)
+///      }
+///    } catch {
+///      print(error)
+///    }
+///    ```
 ///
 /// This example demonstrates a simple chatbot. It keeps a memory of the conversation history and
 /// uses it to build a prompt for the LLM. The conversation continues indefinitely until an error occurs.
