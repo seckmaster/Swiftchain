@@ -71,9 +71,14 @@ public extension PromptTemplateConforming {
 ///    )
 /// ``` 
 ///
-/// In this example, we're setting up a template where the LLM is presented as a programming assistant. The history of the conversation is tracked with a variable `{history}` and the inputs from the user are presented in a conversation format with `{input}` variable.
+/// In this example, we're setting up a template where the LLM is presented as a programming assistant. 
+/// The history of the conversation is tracked with a variable `{history}` and the inputs from the user are presented 
+/// in a conversation format with `{input}` variable.
 ///
-/// The `variableRegex` parameter in `PromptTemplate` is used to identify these variables `{history}` and `{input}` within the template. When the LLM is run, these variables will be replaced with the respective values. Notice how we are using the new Swift syntax for building regular expressions.
+/// The `variableRegex` parameter in `PromptTemplate` is used to identify these variables `{history}` and `{input}` within the template. 
+/// When the LLM is run, these variables will be replaced with the respective values. 
+/// 
+/// Notice how we are using the new Swift syntax for building regular expressions.
 @dynamicCallable
 public struct PromptTemplate: PromptTemplateConforming {
   public typealias Prompt = String
