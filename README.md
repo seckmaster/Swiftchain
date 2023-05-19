@@ -1,6 +1,6 @@
 # Swiftchain: Type-Safe Library for Large Language Models
 
-[![Swift Version](https://img.shields.io/badge/swift-5.1-orange.svg)](https://swift.org)
+[![Swift Version](https://img.shields.io/badge/swift-5.8-orange.svg)](https://swift.org)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 Swiftchain is a type-safe, Swift-centric library designed to simplify working with Large Language Models (LLMs) like GPT-4 and others in real-world applications. 
@@ -32,3 +32,56 @@ let package = Package(
 ```
 
 ### Examples
+
+
+#### A simple chat-bot:
+
+```swift
+// Create an instance of the LLM with OpenAI's GPT-4 model and an API key.
+let llm = ChatOpenAILLM(apiKey: "your api key")
+
+// Create a prompt template adapter with a conversation format.
+let prompt = PromptTemplateAdapter(
+  promptTemplate: PromptTemplate(
+    variableRegex: .init {
+      "{"
+      Capture(OneOrMore(.word))
+      "}"
+    },
+    template: """
+    You are a helpful assistant expert in programming.
+    
+    History:
+    {history}
+    
+    Conversation:
+    Human: {input}
+    AI:
+    """
+  ),
+  adapter: { ChatOpenAILLM.Message(role: .user, content: $0) }
+)
+
+// Create a conversational LLM using the defined LLM, memory and prompt template.
+var ConversationFlow = try ConversationFlow(
+  promptTemplate: prompt, 
+  memory: ConversationMemory<ChatOpenAILLM.Message, String>(memoryVariableKey: "history"), 
+  llm: LLMIOModifier(
+    llm: llm,
+    inputModifier: { [$0] },
+    outputModifier: { $0.messages[0] }
+  )
+)
+
+// Use the conversational LLM in a loop, asking for user input and printing the model's response.
+do {
+  while true {
+    let result = try await ConversationFlow.run(args: [
+      "input": readLine()!
+    ])
+    print(result.content)
+  }
+} catch {
+  print(error)
+}
+```
