@@ -13,7 +13,7 @@ Swiftchain is a type-safe, Swift-centric library designed to simplify working wi
 
 ## Getting Started
 ### Requirements
-- Swift 5.1 or later
+- Swift 5.8
 - Swift Package Manager
 
 ### Installation
@@ -21,13 +21,13 @@ To include Swiftchain in your project, you can add the package as a dependency i
 
 ```swift
 let package = Package(
-    name: "YourProjectName",
-    dependencies: [
-        .package(url: "https://github.com/yourusername/Swiftchain.git", .upToNextMajor(from: "1.0.0"))
-    ],
-    targets: [
-        .target(name: "YourTargetName", dependencies: ["Swiftchain"]),
-    ]
+  name: "YourProjectName",
+  dependencies: [
+    .package(url: "https://github.com/yourusername/Swiftchain.git", .upToNextMajor(from: "1.0.0"))
+  ],
+  targets: [
+    .target(name: "YourTargetName", dependencies: ["Swiftchain"]),
+  ]
 )
 ```
 

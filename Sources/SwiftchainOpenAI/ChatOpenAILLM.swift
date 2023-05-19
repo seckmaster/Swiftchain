@@ -10,7 +10,7 @@ import Swiftchain
 
 /// `ChatOpenAILLM` is a struct that conforms to the `LLM` protocol. 
 /// 
-/// It represents a language learning model (LLM) from OpenAI's Chat API. It's used to facilitate conversation-based tasks.
+/// It represents a Large Language Model (LLM) from OpenAI's Chat API. It's used to facilitate conversation-based tasks.
 public struct ChatOpenAILLM: LLM {
   public struct Variants {
     public let messages: [Message]
