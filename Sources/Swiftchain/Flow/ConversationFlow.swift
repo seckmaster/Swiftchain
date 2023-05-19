@@ -39,7 +39,7 @@ import Foundation
 /// )
 ///
 /// // Create a conversational LLM using the defined LLM, memory and prompt template.
-/// var ConversationFlow = try ConversationFlow(
+/// var conversationFlow = try ConversationFlow(
 ///   promptTemplate: prompt, 
 ///   memory: ConversationMemory<ChatOpenAILLM.Message, String>(memoryVariableKey: "history"), 
 ///   llm: LLMIOModifier(
@@ -52,7 +52,7 @@ import Foundation
 /// // Use the conversational LLM in a loop, asking for user input and printing the model's response.
 /// do {
 ///   while true {
-///     let result = try await ConversationFlow.run(args: [
+///     let result = try await conversationFlow.run(args: [
 ///       "input": readLine()!
 ///     ])
 ///     print(result.content)
