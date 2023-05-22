@@ -40,7 +40,8 @@ let package = Package(
 // Create an instance of the LLM with OpenAI's GPT-4 model and an API key.
 let llm = ChatOpenAILLM(apiKey: "your api key")
 
-// Create a prompt template adapter with a conversation format.
+// Create a prompt template with a conversation format that adapts its output to make
+// it suitable for `ChatOpenAILLM`.
 let prompt = PromptTemplateAdapter(
   promptTemplate: PromptTemplate(
     variableRegex: .init {
@@ -62,7 +63,7 @@ let prompt = PromptTemplateAdapter(
   adapter: { ChatOpenAILLM.Message(role: .user, content: $0) }
 )
 
-// Create a conversational LLM using the defined LLM, memory and prompt template.
+// Create a conversational LLM flow using the defined LLM, memory and prompt template.
 var conversationFlow = try ConversationFlow(
   promptTemplate: prompt, 
   memory: ConversationMemory<ChatOpenAILLM.Message, String>(memoryVariableKey: "history"), 

@@ -27,10 +27,13 @@ import Foundation
 ///
 /// This protocol ensures a consistent method `run(args:)` that executes the LLM with specified arguments, while also
 /// handling any error that may occur during the execution. The method returns the output of the LLM.
-public protocol LLMFlow<Memory, LLM, PromptTemplate> {
+public protocol LLMFlow<Args, Memory, LLM, PromptTemplate> {
+  associatedtype Args
   associatedtype Memory: Swiftchain.Memory
   associatedtype LLM: Swiftchain.LLM
   associatedtype PromptTemplate: Swiftchain.PromptTemplateConforming
+  
+  typealias Output = Memory.LLMOutput
   
   /// A template for formatting the LLM prompts.
   var promptTemplate: PromptTemplate { get }
@@ -46,5 +49,5 @@ public protocol LLMFlow<Memory, LLM, PromptTemplate> {
   /// - Parameter args: The arguments to be passed to the LLM.
   /// - Throws: If the execution fails.
   /// - Returns: The output of the LLM.
-  mutating func run(args: [String: String]) async throws -> Memory.LLMOutput
+  mutating func run(args: Args) async throws -> Memory.LLMOutput
 }

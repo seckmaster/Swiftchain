@@ -112,10 +112,13 @@ public struct ConversationFlow<
     args[memory.memoryVariableKey] = try memory.load()
     memory.save(output: promptTemplate.encode(input: args[inputVariableKey]!))
     let prompt = promptTemplate.format(arguments: args)
-    //    logger.debug("Entering prompted LLM:")
-    //    logger.debug(.init(stringLiteral: String(describing: prompt)))
-    //    logger.debug("")
+    logger.info(.init(stringLiteral: "\n\nEntering prompted LLM:\n\n".bold.italic))
+    var debugDescription = (prompt as? CustomDebugStringConvertible)?.debugDescription ?? .init(describing: prompt)
+    logger.info(.init(stringLiteral: debugDescription + "\n\n"))
     let response = try await llm.invoke(prompt)
+    logger.info(.init(stringLiteral: "\n\nLLM responded with:\n\n".bold.italic))
+    debugDescription = (response as? CustomDebugStringConvertible)?.debugDescription ?? .init(describing: response)
+    logger.info(.init(stringLiteral: debugDescription + "\n\n"))
     memory.save(output: response)
     return response
   }

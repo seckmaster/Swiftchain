@@ -20,6 +20,7 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
+    .package(url: "https://github.com/onevcat/Rainbow", .upToNextMajor(from: "4.0.0")),
   ],
   targets: [
     // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -28,6 +29,7 @@ let package = Package(
       name: "Swiftchain",
       dependencies: [
         .product(name: "Logging", package: "swift-log"),
+        "Rainbow",
       ]
     ),
     .target(

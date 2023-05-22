@@ -117,4 +117,10 @@ public extension JSONEncoder {
   func encodeToString(_ encodable: Encodable) throws -> String {
     String(data: try encode(encodable), encoding: .utf8)!
   }
+  
+  static var pretty: JSONEncoder {
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = .prettyPrinted
+    return encoder
+  }
 }

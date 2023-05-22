@@ -26,6 +26,10 @@ func chat(
   }
   struct Choice: Decodable {
     let message: ChatOpenAILLM.Message
+    let finishReason: FinishReason?
+  }
+  enum FinishReason: String, Decodable {
+    case stop, length, contentFilter
   }
   let data = try await post(
     to: "https://api.openai.com/v1/chat/completions", 
