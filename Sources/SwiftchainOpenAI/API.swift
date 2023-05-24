@@ -8,7 +8,7 @@
 import Swiftchain
 import Foundation
 
-func chat(
+public func chat(
   model: String,
   temperature: Double,
   variants: Int,
@@ -41,9 +41,14 @@ func chat(
     ), 
     headers: ["Authorization": "Bearer \(apiKey)"]
   )
-  return try JSONDecoder().decode(Response.self, from: data)
-    .choices
-    .map { $0.message }
+  do {
+    return try JSONDecoder().decode(Response.self, from: data)
+      .choices
+      .map { $0.message }
+  } catch {
+    logger.error(.init(stringLiteral: "Request to OpenAI failed. Response:\n"+(String(data: data, encoding: .utf8) ?? "<no text>")))
+    throw error
+  }
 }
 
 func completion(
@@ -70,4 +75,35 @@ func completion(
 //    apiKey: apiKey
 //  )
   fatalError()
+}
+
+public func embedding(
+  model: String = "text-embedding-ada-002",
+  input: String,
+  apiKey: String
+) async throws -> [Double] {
+  struct Request: Encodable {
+    let model: String
+    let input: String
+  }
+  struct Response: Decodable {
+    let data: [ResponseData]
+  }
+  struct ResponseData: Decodable {
+    let embedding: [Double]
+  }
+  let data = try await post(
+    to: "https://api.openai.com/v1/embeddings", 
+    request: Request(
+      model: model, 
+      input: input
+    ), 
+    headers: ["Authorization": "Bearer \(apiKey)"]
+  )
+  do {
+    return try JSONDecoder().decode(Response.self, from: data).data.first!.embedding
+  } catch {
+    logger.error(.init(stringLiteral: "Request to OpenAI failed. Response:\n"+(String(data: data, encoding: .utf8) ?? "<no text>")))
+    throw error
+  }
 }
