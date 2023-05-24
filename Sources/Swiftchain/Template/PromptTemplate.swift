@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import RegexBuilder
 
 /// A protocol representing a callable template for LLM prompts.
 ///
@@ -93,7 +94,14 @@ public struct PromptTemplate: PromptTemplateConforming {
   /// - Parameters:
   ///   - variableRegex: The regex for matching variables in the template.
   ///   - template: The template string.
-  public init(variableRegex: Regex, template: String) {
+  public init(
+    variableRegex: Regex = .init {
+      "{"
+      Capture(OneOrMore(.word))
+      "}"
+    }, 
+    template: String
+  ) {
     self.variableRegex = variableRegex
     self.template = template
     self.variables = template.matches(of: variableRegex).map { $0.output.1 }

@@ -71,9 +71,10 @@ public struct ConversationFlow<
 >: LLMFlow where PromptTemplate.Prompt == LLM.Input, Memory.MemoryOutput == String, LLM.Output == Memory.LLMOutput, Memory.LLMOutput == PromptTemplate.Prompt {
   
   public let promptTemplate: PromptTemplate
-  public private(set) var memory: Memory
+  public var memory: Memory
   public let llm: LLM
   public let inputVariableKey: String
+  public let verbose: Bool
   
   /// Initializes a new `ConversationFlow` instance.
   ///
@@ -88,17 +89,19 @@ public struct ConversationFlow<
     promptTemplate: PromptTemplate,
     memory: Memory,
     llm: LLM,
-    inputVariableKey: String = "input"
+    inputVariableKey: String = "input",
+    verbose: Bool = false
   ) throws {
     self.promptTemplate = promptTemplate
     self.memory = memory
     self.llm = llm
     self.inputVariableKey = inputVariableKey
+    self.verbose = verbose
     guard promptTemplate.variables.contains(where: { $0 == memory.memoryVariableKey }) else {
-      throw NSError() // TODO: - throw a specific error!
+      throw NSError(domain: "does not contain memory variable key", code: 0)
     }
     guard promptTemplate.variables.contains(where: { $0 == inputVariableKey }) else {
-      throw NSError() // TODO: - throw a specific error!
+      throw NSError(domain: "does not contain input variable key", code: 0)
     }
   }
   
@@ -112,13 +115,17 @@ public struct ConversationFlow<
     args[memory.memoryVariableKey] = try memory.load()
     memory.save(output: promptTemplate.encode(input: args[inputVariableKey]!))
     let prompt = promptTemplate.format(arguments: args)
-    logger.info(.init(stringLiteral: "\n\nEntering prompted LLM:\n\n".bold.italic))
-    var debugDescription = (prompt as? CustomDebugStringConvertible)?.debugDescription ?? .init(describing: prompt)
-    logger.info(.init(stringLiteral: debugDescription + "\n\n"))
+    if verbose {
+      logger.info(.init(stringLiteral: "\n\n"+"Entering prompted LLM:".bold.italic+"\n\n"))
+      let debugDescription = (prompt as? CustomDebugStringConvertible)?.debugDescription ?? .init(describing: prompt)
+      logger.info(.init(stringLiteral: debugDescription + "\n\n"))
+    }
     let response = try await llm.invoke(prompt)
-    logger.info(.init(stringLiteral: "\n\nLLM responded with:\n\n".bold.italic))
-    debugDescription = (response as? CustomDebugStringConvertible)?.debugDescription ?? .init(describing: response)
-    logger.info(.init(stringLiteral: debugDescription + "\n\n"))
+    if verbose {
+      logger.info(.init(stringLiteral: "\n\n"+"LLM responded with:".bold.italic+"\n\n"))
+      let debugDescription = (response as? CustomDebugStringConvertible)?.debugDescription ?? .init(describing: response)
+      logger.info(.init(stringLiteral: debugDescription + "\n\n"))
+    }
     memory.save(output: response)
     return response
   }
