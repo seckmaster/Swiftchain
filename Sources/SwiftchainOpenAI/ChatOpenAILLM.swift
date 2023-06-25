@@ -60,6 +60,7 @@ public struct ChatOpenAILLM: LLM {
   ///
   /// - Parameters:
   ///   - request: The `Messages` struct representing the request.
+  ///   - functions: A list of functions available for the model or `nil`.
   ///   - temperature: The temperature for model's response generation.
   ///   - numberOfVariants: The number of response variants the API should return.
   ///   - model: The language model to be used.
@@ -68,6 +69,7 @@ public struct ChatOpenAILLM: LLM {
   /// - Throws: An error of type `ChatOpenAILLM.Error` if there's a problem.
   public func invoke(
     _ request: Messages,
+    functions: [Function]? = nil,
     temperature: Double? = nil,
     numberOfVariants: Int? = nil,
     model: String? = nil,
@@ -81,6 +83,7 @@ public struct ChatOpenAILLM: LLM {
       temperature: temperature ?? defaultTemperature, 
       variants: numberOfVariants ?? defaultNumberOfVariants, 
       messages: request,
+      functions: functions,
       apiKey: apiKey
     )
     return .init(messages: messages)
@@ -134,12 +137,35 @@ OpenAI chat based API's expect the following JSON schema:
   }
   
   typealias Messages = [Message]
+}
+
+public extension ChatOpenAILLM {
+  /// Represents a message in a conversation. Includes a role and content.
+  struct Message: Codable, Equatable, Hashable {
+    public var role: Role
+    public var content: String?
+    public var name: String? // `name` should be `nil` for all roles except `function`, where it should be the name of the function whose response is in `content` 
+    public var functionCall: FunctionCall?
+    
+    public init(
+      role: Role, 
+      content: String?,
+      name: String? = nil, 
+      functionCall: FunctionCall? = nil
+    ) {
+      self.role = role
+      self.content = content
+      self.name = name
+      self.functionCall = functionCall
+    }
+  }
   
   /// Enum representing the role of a message sender in a conversation.
   enum Role: Codable, Equatable, Hashable, RawRepresentable {
     case system
     case user
     case assistant
+    case function
     case custom(String)
     
     public init?(rawValue: String) {
@@ -163,25 +189,57 @@ OpenAI chat based API's expect the following JSON schema:
         return "system"
       case .user:
         return "user"
+      case .function:
+        return "function"
       case .custom(let rawValue):
         return rawValue
       }
     }
   }
   
-  /// Represents a message in a conversation. Includes a role and content.
-  struct Message: Codable, Equatable, Hashable {
-    public let role: Role
-    public let content: String
+  struct FunctionCall: Codable, Equatable, Hashable {
+    public var name: String
+    public var arguments: String
     
-    /// Initializes a `Message` instance.
-    ///
-    /// - Parameters:
-    ///   - role: The role of the sender of the message.
-    ///   - content: The content of the message.
-    public init(role: Role, content: String) {
-      self.role = role
-      self.content = content
+    public init(name: String, arguments: String) {
+      self.name = name
+      self.arguments = arguments
+    }
+  }
+  
+  struct Function: Codable, Equatable, Hashable {
+    public var name: String // The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64.
+    public var description: String // The description of what the function does.
+    public var parameters: ParameterDescription // The parameters the functions accepts, described as a JSON Schema object.
+    
+    public init(name: String, description: String, parameters: ParameterDescription) {
+      self.name = name
+      self.description = description
+      self.parameters = parameters
+    }
+  }
+  
+  struct ParameterDescription: Codable, Equatable, Hashable {
+    public var type: String
+    public var properties: [String: Property]
+    public var required: [String]
+    
+    public init(type: String, properties: [String : Property], required: [String]) {
+      self.type = type
+      self.properties = properties
+      self.required = required
+    }
+  }
+  
+  struct Property: Codable, Equatable, Hashable {
+    public var type: String
+    public var description: String
+    public var `enum`: [String]?
+    
+    public init(type: String, description: String, `enum`: [String]? = nil) {
+      self.type = type
+      self.description = description
+      self.enum = `enum`
     }
   }
 }

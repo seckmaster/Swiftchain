@@ -13,11 +13,13 @@ public func chat(
   temperature: Double,
   variants: Int,
   messages: ChatOpenAILLM.Messages,
+  functions: [ChatOpenAILLM.Function]?,
   apiKey: String
 ) async throws -> [ChatOpenAILLM.Message] {
   struct Request: Encodable {
     let model: String
     let messages: [ChatOpenAILLM.Message]
+    let functions: [ChatOpenAILLM.Function]?
     let temperature: Double
     let n: Int
   }
@@ -29,20 +31,23 @@ public func chat(
     let finishReason: FinishReason?
   }
   enum FinishReason: String, Decodable {
-    case stop, length, contentFilter
+    case stop, length, contentFilter = "content_filter", functionCall = "function_call"
   }
   let data = try await post(
     to: "https://api.openai.com/v1/chat/completions", 
     request: Request(
       model: model, 
-      messages: messages, 
+      messages: messages,
+      functions: functions,
       temperature: temperature,
       n: variants
     ), 
     headers: ["Authorization": "Bearer \(apiKey)"]
   )
   do {
-    return try JSONDecoder().decode(Response.self, from: data)
+    let decoder = JSONDecoder()
+    decoder.keyDecodingStrategy = .convertFromSnakeCase
+    return try decoder.decode(Response.self, from: data)
       .choices
       .map { $0.message }
   } catch {
