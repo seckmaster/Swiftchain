@@ -190,6 +190,14 @@ public extension ChatOpenAILLM {
       self.name = name
       self.functionCall = functionCall
     }
+    
+    public init(from decoder: Decoder) throws {
+      let container: KeyedDecodingContainer<ChatOpenAILLM.Message.CodingKeys> = try decoder.container(keyedBy: ChatOpenAILLM.Message.CodingKeys.self)
+      self.role = try container.decodeIfPresent(ChatOpenAILLM.Role.self, forKey: ChatOpenAILLM.Message.CodingKeys.role) ?? .assistant
+      self.content = try container.decodeIfPresent(String.self, forKey: ChatOpenAILLM.Message.CodingKeys.content)
+      self.name = try container.decodeIfPresent(String.self, forKey: ChatOpenAILLM.Message.CodingKeys.name)
+      self.functionCall = try container.decodeIfPresent(ChatOpenAILLM.FunctionCall.self, forKey: ChatOpenAILLM.Message.CodingKeys.functionCall)
+    }
   }
   
   /// Enum representing the role of a message sender in a conversation.
@@ -230,7 +238,7 @@ public extension ChatOpenAILLM {
   }
   
   struct FunctionCall: Codable, Equatable, Hashable {
-    public var name: String
+    public var name: String?
     public var arguments: String
     
     public init(name: String, arguments: String) {
@@ -244,7 +252,11 @@ public extension ChatOpenAILLM {
     public var description: String // The description of what the function does.
     public var parameters: ParameterDescription // The parameters the functions accepts, described as a JSON Schema object.
     
-    public init(name: String, description: String, parameters: ParameterDescription) {
+    public init(
+      name: String, 
+      description: String, 
+      parameters: ParameterDescription
+    ) {
       self.name = name
       self.description = description
       self.parameters = parameters

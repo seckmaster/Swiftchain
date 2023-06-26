@@ -62,10 +62,7 @@ public func streamChat(
   )
   struct Choices: Decodable {
     struct Choice: Decodable {
-      struct Delta: Decodable {
-        let content: String?
-      }
-      let delta: Delta
+      let delta: ChatOpenAILLM.Message
       let finishReason: FinishReason?
     }
     let choices: [Choice]
@@ -78,21 +75,21 @@ public func streamChat(
       let chunks = string.split(separator: "data: ")
       return try chunks
         .map { String($0).data(using: .utf8)! }
-        .map { 
+        .flatMap { 
           do {
             if $0 == "[DONE]\n\n".data(using: .utf8)! {
-              return ChatOpenAILLM.Variants(messages: [])
+              return []
             }
             let choices = try decoder.decode(Choices.self, from: $0)
             var messages = [ChatOpenAILLM.Message]()
             for choice in choices.choices {
-              if let content = choice.delta.content {
-                messages.append(.init(role: .assistant, content: content))
-              } else if choice.finishReason == .stop {
+              if choice.finishReason != nil {
                 break
+              } else {
+                messages.append(choice.delta)
               }
             }
-            return ChatOpenAILLM.Variants(messages: messages)
+            return messages
           } catch {
             print(error)
             throw error
