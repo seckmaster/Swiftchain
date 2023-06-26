@@ -88,6 +88,38 @@ public struct ChatOpenAILLM: LLM {
     )
     return .init(messages: messages)
   }
+  
+  /// Asynchronously communicates with the OpenAI API. Allows default properties to be overridden.
+  ///
+  /// - Parameters:
+  ///   - request: The `Messages` struct representing the request.
+  ///   - functions: A list of functions available for the model or `nil`.
+  ///   - temperature: The temperature for model's response generation.
+  ///   - numberOfVariants: The number of response variants the API should return.
+  ///   - model: The language model to be used.
+  ///   - apiKey: The OpenAI API key.
+  /// - Returns: The `Variants` struct representing the response.
+  /// - Throws: An error of type `ChatOpenAILLM.Error` if there's a problem.
+  public func stream(
+    _ request: Messages,
+    functions: [Function]? = nil,
+    temperature: Double? = nil,
+    numberOfVariants: Int? = nil,
+    model: String? = nil,
+    apiKey: String? = nil
+  ) throws -> any AsyncSequence {
+    guard let apiKey = apiKey ?? self.apiKey ?? ProcessInfo.processInfo.openAIApiKey else {
+      throw Error.missingApiKey
+    }
+    return try streamChat(
+      model: model ?? defaultModel,
+      temperature: temperature ?? defaultTemperature, 
+      variants: numberOfVariants ?? defaultNumberOfVariants, 
+      messages: request,
+      functions: functions,
+      apiKey: apiKey
+    )
+  }
 }
 
 public extension ChatOpenAILLM {

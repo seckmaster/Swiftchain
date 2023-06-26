@@ -16,23 +16,6 @@ public func chat(
   functions: [ChatOpenAILLM.Function]?,
   apiKey: String
 ) async throws -> [ChatOpenAILLM.Message] {
-  struct Request: Encodable {
-    let model: String
-    let messages: [ChatOpenAILLM.Message]
-    let functions: [ChatOpenAILLM.Function]?
-    let temperature: Double
-    let n: Int
-  }
-  struct Response: Decodable {
-    let choices: [Choice]
-  }
-  struct Choice: Decodable {
-    let message: ChatOpenAILLM.Message
-    let finishReason: FinishReason?
-  }
-  enum FinishReason: String, Decodable {
-    case stop, length, contentFilter = "content_filter", functionCall = "function_call"
-  }
   let data = try await post(
     to: "https://api.openai.com/v1/chat/completions", 
     request: Request(
@@ -40,8 +23,9 @@ public func chat(
       messages: messages,
       functions: functions,
       temperature: temperature,
-      n: variants
-    ), 
+      n: variants,
+      stream: false
+    ),
     headers: ["Authorization": "Bearer \(apiKey)"]
   )
   do {
@@ -53,6 +37,71 @@ public func chat(
   } catch {
     logger.error(.init(stringLiteral: "Request to OpenAI failed. Response:\n"+(String(data: data, encoding: .utf8) ?? "<no text>")))
     throw error
+  }
+}
+
+public func streamChat(
+  model: String,
+  temperature: Double,
+  variants: Int,
+  messages: ChatOpenAILLM.Messages,
+  functions: [ChatOpenAILLM.Function]?,
+  apiKey: String
+) throws -> any AsyncSequence {
+  let stream = try streamPost(
+    to: "https://api.openai.com/v1/chat/completions", 
+    request: Request(
+      model: model, 
+      messages: messages,
+      functions: functions,
+      temperature: temperature,
+      n: variants,
+      stream: true
+    ),
+    headers: ["Authorization": "Bearer \(apiKey)"]
+  )
+  struct Choices: Decodable {
+    struct Choice: Decodable {
+      struct Delta: Decodable {
+        let content: String?
+      }
+      let delta: Delta
+      let finishReason: FinishReason?
+    }
+    let choices: [Choice]
+  }
+  let decoder = JSONDecoder()
+  decoder.keyDecodingStrategy = .convertFromSnakeCase
+  return stream.map { data in
+    do {
+      let string = String(data: data, encoding: .utf8)!
+      let chunks = string.split(separator: "data: ")
+      return try chunks
+        .map { String($0).data(using: .utf8)! }
+        .map { 
+          do {
+            if $0 == "[DONE]\n\n".data(using: .utf8)! {
+              return ChatOpenAILLM.Variants(messages: [])
+            }
+            let choices = try decoder.decode(Choices.self, from: $0)
+            var messages = [ChatOpenAILLM.Message]()
+            for choice in choices.choices {
+              if let content = choice.delta.content {
+                messages.append(.init(role: .assistant, content: content))
+              } else if choice.finishReason == .stop {
+                break
+              }
+            }
+            return ChatOpenAILLM.Variants(messages: messages)
+          } catch {
+            print(error)
+            throw error
+          }
+        }
+    } catch {
+      logger.error(.init(stringLiteral: "Request to OpenAI failed. Response:\n"+(String(data: data, encoding: .utf8) ?? "<no text>")))
+      throw error
+    }
   }
 }
 
@@ -111,4 +160,26 @@ public func embedding(
     logger.error(.init(stringLiteral: "Request to OpenAI failed. Response:\n"+(String(data: data, encoding: .utf8) ?? "<no text>")))
     throw error
   }
+}
+
+private struct Request: Encodable {
+  let model: String
+  let messages: [ChatOpenAILLM.Message]
+  let functions: [ChatOpenAILLM.Function]?
+  let temperature: Double
+  let n: Int
+  let stream: Bool
+}
+
+private struct Response: Decodable {
+  let choices: [Choice]
+}
+
+private struct Choice: Decodable {
+  let message: ChatOpenAILLM.Message
+  let finishReason: FinishReason?
+}
+
+private enum FinishReason: String, Decodable {
+  case stop, length, contentFilter = "content_filter", functionCall = "function_call"
 }
