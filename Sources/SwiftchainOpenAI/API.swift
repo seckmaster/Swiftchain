@@ -69,37 +69,37 @@ public func streamChat(
   }
   let decoder = JSONDecoder()
   decoder.keyDecodingStrategy = .convertFromSnakeCase
+  let doneData = "[DONE]\n\n".data(using: .utf8)!
   return stream.map { data in
-    do {
-      let string = String(data: data, encoding: .utf8)!
-      let chunks = string.split(separator: "data: ")
-      return try chunks
-        .map { String($0).data(using: .utf8)! }
-        .flatMap { 
-          do {
-            if $0 == "[DONE]\n\n".data(using: .utf8)! {
-              return []
-            }
-            let choices = try decoder.decode(Choices.self, from: $0)
-            var messages = [ChatOpenAILLM.Message]()
-            for choice in choices.choices {
-              if choice.finishReason != nil {
-                break
-              } else {
-                messages.append(choice.delta)
+      do {
+        let string = String(data: data, encoding: .utf8)!
+        let chunks = string.split(separator: "data: ")
+        return try chunks
+          .map { String($0).data(using: .utf8)! }
+          .flatMap { 
+            do {
+              if $0 == doneData {
+                return [ChatOpenAILLM.Message]()
               }
+              let choices = try decoder.decode(Choices.self, from: $0)
+              var messages = [ChatOpenAILLM.Message]()
+              for choice in choices.choices {
+                if choice.finishReason != nil {
+                  break
+                } else {
+                  messages.append(choice.delta)
+                }
+              }
+              return messages
+            } catch {
+              throw error
             }
-            return messages
-          } catch {
-            print(error)
-            throw error
           }
-        }
-    } catch {
-      logger.error(.init(stringLiteral: "Request to OpenAI failed. Response:\n"+(String(data: data, encoding: .utf8) ?? "<no text>")))
-      throw error
+      } catch {
+        logger.error(.init(stringLiteral: "Request to OpenAI failed. Response:\n"+(String(data: data, encoding: .utf8) ?? "<no text>")))
+        throw error
+      }
     }
-  }
 }
 
 func completion(

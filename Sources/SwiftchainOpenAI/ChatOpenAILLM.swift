@@ -216,6 +216,8 @@ public extension ChatOpenAILLM {
         self = .user
       case "system":
         self = .system
+      case "function":
+        self = .function
       case _:
         self = .custom(rawValue)
       }
