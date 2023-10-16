@@ -281,11 +281,37 @@ public extension ChatOpenAILLM {
     public var type: String
     public var description: String
     public var `enum`: [String]?
+    public var items: ArrayProperty?
     
-    public init(type: String, description: String, `enum`: [String]? = nil) {
+    public init(
+      type: String, 
+      description: String, 
+      `enum`: [String]? = nil,
+      items: ArrayProperty? = nil
+    ) {
       self.type = type
       self.description = description
       self.enum = `enum`
+      self.items = items
+    }
+  }
+    
+  class ArrayProperty: Codable, Equatable, Hashable {
+    public var type: String
+    public var items: ArrayProperty?
+    
+    init(type: String, items: ArrayProperty? = nil) {
+      self.type = type
+      self.items = items
+    }
+    
+    public static func == (lhs: ChatOpenAILLM.ArrayProperty, rhs: ChatOpenAILLM.ArrayProperty) -> Bool {
+      lhs.type == rhs.type && lhs.items == rhs.items
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+      hasher.combine(type)
+      hasher.combine(items)
     }
   }
 }
