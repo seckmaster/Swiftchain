@@ -300,7 +300,7 @@ public extension ChatOpenAILLM {
     public var type: String
     public var items: ArrayProperty?
     
-    init(type: String, items: ArrayProperty? = nil) {
+    public init(type: String, items: ArrayProperty? = nil) {
       self.type = type
       self.items = items
     }
