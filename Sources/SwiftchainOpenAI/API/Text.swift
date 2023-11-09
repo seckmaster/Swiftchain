@@ -1,12 +1,12 @@
 //
-//  API.swift
+//  Text.swift
 //  
 //
-//  Created by Toni K. Turk on 17/05/2023.
+//  Created by Toni K. Turk on 9. 11. 23.
 //
 
-import Swiftchain
 import Foundation
+import Swiftchain
 
 public func chat(
   model: String,
@@ -71,35 +71,35 @@ public func streamChat(
   decoder.keyDecodingStrategy = .convertFromSnakeCase
   let doneData = "[DONE]\n\n".data(using: .utf8)!
   return stream.map { data in
-      do {
-        let string = String(data: data, encoding: .utf8)!
-        let chunks = string.split(separator: "data: ")
-        return try chunks
-          .map { String($0).data(using: .utf8)! }
-          .flatMap { 
-            do {
-              if $0 == doneData {
-                return [ChatOpenAILLM.Message]()
-              }
-              let choices = try decoder.decode(Choices.self, from: $0)
-              var messages = [ChatOpenAILLM.Message]()
-              for choice in choices.choices {
-                if choice.finishReason != nil {
-                  break
-                } else {
-                  messages.append(choice.delta)
-                }
-              }
-              return messages
-            } catch {
-              throw error
+    do {
+      let string = String(data: data, encoding: .utf8)!
+      let chunks = string.split(separator: "data: ")
+      return try chunks
+        .map { String($0).data(using: .utf8)! }
+        .flatMap { 
+          do {
+            if $0 == doneData {
+              return [ChatOpenAILLM.Message]()
             }
+            let choices = try decoder.decode(Choices.self, from: $0)
+            var messages = [ChatOpenAILLM.Message]()
+            for choice in choices.choices {
+              if choice.finishReason != nil {
+                break
+              } else {
+                messages.append(choice.delta)
+              }
+            }
+            return messages
+          } catch {
+            throw error
           }
-      } catch {
-        logger.error(.init(stringLiteral: "Request to OpenAI failed. Response:\n"+(String(data: data, encoding: .utf8) ?? "<no text>")))
-        throw error
-      }
+        }
+    } catch {
+      logger.error(.init(stringLiteral: "Request to OpenAI failed. Response:\n"+(String(data: data, encoding: .utf8) ?? "<no text>")))
+      throw error
     }
+  }
 }
 
 func completion(
@@ -115,16 +115,16 @@ func completion(
     let temperature: Double
     let n: Int
   }
-//  return try await call(
-//    api: "https://api.openai.com/v1/completions", 
-//    request: Request(
-//      model: model, 
-//      prompt: prompt, 
-//      temperature: temperature, 
-//      n: variants
-//    ), 
-//    apiKey: apiKey
-//  )
+  //  return try await call(
+  //    api: "https://api.openai.com/v1/completions", 
+  //    request: Request(
+  //      model: model, 
+  //      prompt: prompt, 
+  //      temperature: temperature, 
+  //      n: variants
+  //    ), 
+  //    apiKey: apiKey
+  //  )
   fatalError()
 }
 
