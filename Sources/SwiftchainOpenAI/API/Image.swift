@@ -26,8 +26,8 @@ public enum ImageStyle: String, Codable {
 }
 
 public struct ImageResponse: Decodable {
-  let url: URL?
-  let b64Json: Data?
+  public var url: URL?
+  public var b64Json: Data?
 }
 
 public func createImage(
