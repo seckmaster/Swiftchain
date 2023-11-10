@@ -23,6 +23,25 @@ public func post<Request: Encodable>(
   return data
 }
 
+
+public func post<Request: Encodable, Response: Decodable>(
+  to url: URL,
+  request: Request,
+  headers: [String: String],
+  encoder: JSONEncoder = .init(),
+  decoder: JSONDecoder = .init(),
+  session: URLSession = .withLongTimeout
+) async throws -> Response {
+  var urlRequest = URLRequest(url: url)
+  urlRequest.httpMethod = "POST"
+  urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+  urlRequest.allHTTPHeaderFields = headers
+  urlRequest.httpBody = try encoder.encode(request)
+  let data = try await session.data(for: urlRequest).0
+  let response = try decoder.decode(Response.self, from: data)
+  return response
+}
+
 public func streamPost<Request: Encodable>(
   to url: URL,
   request: Request,

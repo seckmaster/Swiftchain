@@ -16,7 +16,9 @@ public func chat(
   functions: [ChatOpenAILLM.Function]?,
   apiKey: String
 ) async throws -> [ChatOpenAILLM.Message] {
-  let data = try await post(
+  let decoder = JSONDecoder()
+  decoder.keyDecodingStrategy = .convertFromSnakeCase
+  let response: Response = try await post(
     to: "https://api.openai.com/v1/chat/completions", 
     request: Request(
       model: model, 
@@ -26,18 +28,12 @@ public func chat(
       n: variants,
       stream: false
     ),
-    headers: ["Authorization": "Bearer \(apiKey)"]
+    headers: ["Authorization": "Bearer \(apiKey)"],
+    decoder: decoder
   )
-  do {
-    let decoder = JSONDecoder()
-    decoder.keyDecodingStrategy = .convertFromSnakeCase
-    return try decoder.decode(Response.self, from: data)
-      .choices
-      .map { $0.message }
-  } catch {
-    logger.error(.init(stringLiteral: "Request to OpenAI failed. Response:\n"+(String(data: data, encoding: .utf8) ?? "<no text>")))
-    throw error
-  }
+  return response
+    .choices
+    .map { $0.message }
 }
 
 public func streamChat(
@@ -99,63 +95,6 @@ public func streamChat(
       logger.error(.init(stringLiteral: "Request to OpenAI failed. Response:\n"+(String(data: data, encoding: .utf8) ?? "<no text>")))
       throw error
     }
-  }
-}
-
-func completion(
-  model: String,
-  temperature: Double,
-  variants: Int,
-  prompt: String,
-  apiKey: String
-) async throws -> [String] {
-  struct Request: Encodable {
-    let model: String
-    let prompt: String
-    let temperature: Double
-    let n: Int
-  }
-  //  return try await call(
-  //    api: "https://api.openai.com/v1/completions", 
-  //    request: Request(
-  //      model: model, 
-  //      prompt: prompt, 
-  //      temperature: temperature, 
-  //      n: variants
-  //    ), 
-  //    apiKey: apiKey
-  //  )
-  fatalError()
-}
-
-public func embedding(
-  model: String = "text-embedding-ada-002",
-  input: String,
-  apiKey: String
-) async throws -> [Double] {
-  struct Request: Encodable {
-    let model: String
-    let input: String
-  }
-  struct Response: Decodable {
-    let data: [ResponseData]
-  }
-  struct ResponseData: Decodable {
-    let embedding: [Double]
-  }
-  let data = try await post(
-    to: "https://api.openai.com/v1/embeddings", 
-    request: Request(
-      model: model, 
-      input: input
-    ), 
-    headers: ["Authorization": "Bearer \(apiKey)"]
-  )
-  do {
-    return try JSONDecoder().decode(Response.self, from: data).data.first!.embedding
-  } catch {
-    logger.error(.init(stringLiteral: "Request to OpenAI failed. Response:\n"+(String(data: data, encoding: .utf8) ?? "<no text>")))
-    throw error
   }
 }
 
