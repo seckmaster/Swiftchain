@@ -174,20 +174,17 @@ OpenAI chat based API's expect the following JSON schema:
 public extension ChatOpenAILLM {
   /// Represents a message in a conversation. Includes a role and content.
   struct Message: Codable, Equatable, Hashable {
-    public let id: UUID
     public var role: Role
     public var content: String?
     public var name: String? // `name` should be `nil` for all roles except `function`, where it should be the name of the function whose response is in `content` 
     public var functionCall: FunctionCall?
     
     public init(
-      id: UUID,
       role: Role, 
       content: String?,
       name: String? = nil, 
       functionCall: FunctionCall? = nil
     ) {
-      self.id = id
       self.role = role
       self.content = content
       self.name = name
@@ -196,7 +193,6 @@ public extension ChatOpenAILLM {
     
     public init(from decoder: Decoder) throws {
       let container: KeyedDecodingContainer<ChatOpenAILLM.Message.CodingKeys> = try decoder.container(keyedBy: ChatOpenAILLM.Message.CodingKeys.self)
-      self.id = try container.decode(UUID.self, forKey: .id)
       self.role = try container.decodeIfPresent(ChatOpenAILLM.Role.self, forKey: ChatOpenAILLM.Message.CodingKeys.role) ?? .assistant
       self.content = try container.decodeIfPresent(String.self, forKey: ChatOpenAILLM.Message.CodingKeys.content)
       self.name = try container.decodeIfPresent(String.self, forKey: ChatOpenAILLM.Message.CodingKeys.name)
