@@ -52,10 +52,6 @@ public func createImage(
   struct Response: Decodable {
     let data: [ImageResponse]
   }
-  let encoder = JSONEncoder()
-  encoder.keyEncodingStrategy = .convertToSnakeCase
-  let decoder = JSONDecoder()
-  decoder.keyDecodingStrategy = .convertFromSnakeCase
   let response: Response = try await post(
     to: "https://api.openai.com/v1/audio/speech", 
     request: Request(

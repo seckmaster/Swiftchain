@@ -16,8 +16,6 @@ public func chat(
   functions: [ChatOpenAILLM.Function]?,
   apiKey: String
 ) async throws -> [ChatOpenAILLM.Message] {
-  let decoder = JSONDecoder()
-  decoder.keyDecodingStrategy = .convertFromSnakeCase
   let response: Response = try await post(
     to: "https://api.openai.com/v1/chat/completions", 
     request: Request(
@@ -63,8 +61,6 @@ public func streamChat(
     }
     let choices: [Choice]
   }
-  let decoder = JSONDecoder()
-  decoder.keyDecodingStrategy = .convertFromSnakeCase
   let doneData = "[DONE]\n\n".data(using: .utf8)!
   return stream.map { data in
     do {
