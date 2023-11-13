@@ -30,7 +30,7 @@ public func speech(
   model: String,
   input: String,
   voice: Voice,
-  responseFormat: String = "mp3",
+  responseFormat: AudioFormat = .mp3,
   speed: Double = 1.0,
   apiKey: String
 ) async throws -> Data {
@@ -54,8 +54,47 @@ public func speech(
   )
 }
 
-//public func transcription(
-//  
-//) async throws -> String {
-//  
-//}
+public enum TranscriptionOutputFormat: String, Codable {
+  case json, text, srt, verboseJson = "verbose_json", vtt
+}
+
+public func transcription(
+  fileName: String,
+  audioData: Data,
+  model: String = "whisper-1",
+//  language: String? = nil,
+//  prompt: String? = nil,
+//  responseFormat: TranscriptionOutputFormat? = nil,
+//  temperature: Double? = 0.2,
+  apiKey: String
+) async throws -> String {
+  var data = Data()
+  data.reserveCapacity(audioData.count + 1024)
+  
+  let boundary = UUID().uuidString
+  
+  data.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
+  data.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8)!)
+  data.append(model.data(using: .utf8)!)
+  
+  data.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
+  data.append("Content-Disposition: form-data; name=\"file\"; filename=\(fileName)\r\n".data(using: .utf8)!)
+  data.append("Content-Type: audio/\(fileName.split(separator: ".")[1])\r\n\r\n".data(using: .utf8)!)
+  data.append(audioData)
+  data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+  
+  struct Response: Decodable {
+    let text: String
+  }
+  let response: Response = try await post(
+    to: "https://api.openai.com/v1/audio/transcriptions",
+    binaryStream: data,
+    headers: [
+      "Authorization": "Bearer \(apiKey)",
+      "OpenAI-Beta": "assistants=v1",
+      "Content-Type": "multipart/form-data; boundary=\(boundary)",
+    ],
+    decoder: decoder
+  )
+  return response.text
+}

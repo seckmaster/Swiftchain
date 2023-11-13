@@ -41,12 +41,12 @@ public func listFiles(
 
 public func uploadFile(
   fileName: String,
-  base64EncodedData file: Data, // max 512MB
+  file: Data, // max 512MB
   purpose: File.Purpose,
   apiKey: String
 ) async throws -> File {
   var data = Data()
-  data.reserveCapacity(file.count)
+  data.reserveCapacity(file.count + 1024)
   
   let boundary = UUID().uuidString
   
@@ -81,7 +81,8 @@ public func file(
     headers: [
       "Authorization": "Bearer \(apiKey)",
       "OpenAI-Beta": "assistants=v1",
-    ]
+    ],
+    decoder: decoder
   )
 }
 
