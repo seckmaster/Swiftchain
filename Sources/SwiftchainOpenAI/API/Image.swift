@@ -33,7 +33,7 @@ public struct ImageResponse: Decodable {
 public func createImage(
   prompt: String,
   model: String? = nil,
-  n: Int? = nil, // 1..10 (for dall-e-3, must be 1)
+  n: Int? = 1, // 1..10 (for dall-e-3, must be 1)
   quality: ImageQuality? = nil,
   responseFormat: ImageResponseFormat? = nil,
   size: String? = nil,
@@ -53,7 +53,7 @@ public func createImage(
     let data: [ImageResponse]
   }
   let response: Response = try await post(
-    to: "https://api.openai.com/v1/audio/speech", 
+    to: "https://api.openai.com/v1/images/generations", 
     request: Request(
       prompt: prompt, 
       model: model, 

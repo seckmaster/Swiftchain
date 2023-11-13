@@ -150,3 +150,9 @@ private class Delegate: NSObject, URLSessionDataDelegate {
     cont.finish(throwing: error)
   }
 }
+
+public extension Data {
+  var utf8: String? {
+    String(data: self, encoding: .utf8)
+  }
+}
