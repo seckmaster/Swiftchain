@@ -38,7 +38,7 @@ public func speech(
     let model: String
     let input: String
     let voice: Voice
-    let responseFormat: String
+    let responseFormat: AudioFormat
     let speed: Double
   }
   return try await post(
