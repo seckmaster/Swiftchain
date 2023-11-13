@@ -80,6 +80,22 @@ public func post<Request: Encodable, Response: Decodable>(
   return try decoder.decode(Response.self, from: data)
 }
 
+public func post<Response: Decodable>(
+  to url: URL,
+  binaryStream: Data,
+  headers: [String: String],
+  decoder: JSONDecoder = .init(),
+  session: URLSession = .withLongTimeout
+) async throws -> Response {
+  var urlRequest = URLRequest(url: url)
+  urlRequest.httpMethod = "POST"
+  urlRequest.setValue("multipart/form-data", forHTTPHeaderField: "Content-Type")
+  urlRequest.allHTTPHeaderFields = headers
+  urlRequest.httpBody = binaryStream
+  let data = try await session.data(for: urlRequest).0
+  return try decoder.decode(Response.self, from: data)
+}
+
 public func post<Request: Encodable, Response: Decodable>(
   to url: URL,
   request: Request,

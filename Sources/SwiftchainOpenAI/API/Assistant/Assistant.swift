@@ -134,7 +134,8 @@ public func attach(
     headers: [
       "Authorization": "Bearer \(apiKey)",
       "OpenAI-Beta": "assistants=v1",
-    ]
+    ],
+    decoder: decoder
   )
 }
 
