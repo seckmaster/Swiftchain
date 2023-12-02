@@ -62,7 +62,7 @@ public func transcription(
   fileName: String,
   audioData: Data,
   model: String = "whisper-1",
-//  language: String? = nil,
+  languageCode: String? = nil, // ISO-693-1 code: english = "en", slovenian = "sl"
 //  prompt: String? = nil,
 //  responseFormat: TranscriptionOutputFormat? = nil,
 //  temperature: Double? = 0.2,
@@ -81,6 +81,19 @@ public func transcription(
   data.append("Content-Disposition: form-data; name=\"file\"; filename=\(fileName)\r\n".data(using: .utf8)!)
   data.append("Content-Type: audio/\(fileName.split(separator: ".")[1])\r\n\r\n".data(using: .utf8)!)
   data.append(audioData)
+  body.append("\r\n".data(using: .utf8)!)
+  
+  body.append("--\(boundary)\r\n".data(using: .utf8)!)
+  body.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8)!)
+  body.append("\(model)\r\n".data(using: .utf8)!)
+  
+  // Append the language
+  if let languageCode {
+    body.append("--\(boundary)\r\n".data(using: .utf8)!)
+    body.append("Content-Disposition: form-data; name=\"language\"\r\n\r\n".data(using: .utf8)!)
+    body.append("\(languageCode)\r\n".data(using: .utf8)!)
+  }
+  
   data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
   
   struct Response: Decodable {
