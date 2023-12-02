@@ -81,17 +81,17 @@ public func transcription(
   data.append("Content-Disposition: form-data; name=\"file\"; filename=\(fileName)\r\n".data(using: .utf8)!)
   data.append("Content-Type: audio/\(fileName.split(separator: ".")[1])\r\n\r\n".data(using: .utf8)!)
   data.append(audioData)
-  body.append("\r\n".data(using: .utf8)!)
+  data.append("\r\n".data(using: .utf8)!)
   
-  body.append("--\(boundary)\r\n".data(using: .utf8)!)
-  body.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8)!)
-  body.append("\(model)\r\n".data(using: .utf8)!)
+  data.append("--\(boundary)\r\n".data(using: .utf8)!)
+  data.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8)!)
+  data.append("\(model)\r\n".data(using: .utf8)!)
   
   // Append the language
   if let languageCode {
-    body.append("--\(boundary)\r\n".data(using: .utf8)!)
-    body.append("Content-Disposition: form-data; name=\"language\"\r\n\r\n".data(using: .utf8)!)
-    body.append("\(languageCode)\r\n".data(using: .utf8)!)
+    data.append("--\(boundary)\r\n".data(using: .utf8)!)
+    data.append("Content-Disposition: form-data; name=\"language\"\r\n\r\n".data(using: .utf8)!)
+    data.append("\(languageCode)\r\n".data(using: .utf8)!)
   }
   
   data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
