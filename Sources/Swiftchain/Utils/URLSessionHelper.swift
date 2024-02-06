@@ -7,6 +7,47 @@
 
 import Foundation
 
+public func get(
+  to url: URL,
+  headers: [String: String],
+  session: URLSession = .withLongTimeout
+) async throws -> Data {
+  var urlRequest = URLRequest(url: url)
+  urlRequest.httpMethod = "GET"
+  urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+  urlRequest.allHTTPHeaderFields = headers
+  return try await session.data(for: urlRequest).0
+}
+
+public func get<Response: Decodable>(
+  to url: URL,
+  headers: [String: String],
+  decoder: JSONDecoder,
+  session: URLSession = .withLongTimeout
+) async throws -> Response {
+  let data = try await get(
+    to: url,
+    headers: headers,
+    session: session 
+  )
+  return try decoder.decode(Response.self, from: data)
+}
+
+public func get<Response: Decodable>(
+  to url: URL,
+  headers: [String: String],
+  decode: Response.Type, 
+  decoder: JSONDecoder,
+  session: URLSession = .withLongTimeout
+) async throws -> Response {
+  let data = try await get(
+    to: url,
+    headers: headers,
+    session: session 
+  )
+  return try decoder.decode(decode, from: data)
+}
+
 public func post<Request: Encodable>(
   to url: URL,
   request: Request,
@@ -19,8 +60,59 @@ public func post<Request: Encodable>(
   urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
   urlRequest.allHTTPHeaderFields = headers
   urlRequest.httpBody = try encoder.encode(request)
+  return try await session.data(for: urlRequest).0
+}
+
+public func post<Request: Encodable, Response: Decodable>(
+  to url: URL,
+  request: Request,
+  headers: [String: String],
+  encoder: JSONEncoder = .init(),
+  decoder: JSONDecoder = .init(),
+  session: URLSession = .withLongTimeout
+) async throws -> Response {
+  var urlRequest = URLRequest(url: url)
+  urlRequest.httpMethod = "POST"
+  urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+  urlRequest.allHTTPHeaderFields = headers
+  urlRequest.httpBody = try encoder.encode(request)
   let data = try await session.data(for: urlRequest).0
-  return data
+  return try decoder.decode(Response.self, from: data)
+}
+
+public func post<Response: Decodable>(
+  to url: URL,
+  binaryStream: Data,
+  headers: [String: String],
+  decoder: JSONDecoder = .init(),
+  session: URLSession = .withLongTimeout
+) async throws -> Response {
+  var urlRequest = URLRequest(url: url)
+  urlRequest.httpMethod = "POST"
+  urlRequest.setValue("multipart/form-data", forHTTPHeaderField: "Content-Type")
+  urlRequest.allHTTPHeaderFields = headers
+  urlRequest.httpBody = binaryStream
+  let data = try await session.data(for: urlRequest).0
+  return try decoder.decode(Response.self, from: data)
+}
+
+public func post<Request: Encodable, Response: Decodable>(
+  to url: URL,
+  request: Request,
+  decode into: Response.Type,
+  headers: [String: String],
+  encoder: JSONEncoder = .init(),
+  decoder: JSONDecoder = .init(),
+  session: URLSession = .withLongTimeout
+) async throws -> Response {
+  let data = try await post(
+    to: url, 
+    request: request, 
+    headers: headers,
+    encoder: encoder,
+    session: session
+  )
+  return try decoder.decode(into, from: data)
 }
 
 public func streamPost<Request: Encodable>(
@@ -41,25 +133,6 @@ public func streamPost<Request: Encodable>(
     task.delegate = delegate
     task.resume()
   }
-}
-
-public func post<Request: Encodable, Response: Decodable>(
-  to url: URL,
-  request: Request,
-  decode into: Response.Type,
-  headers: [String: String],
-  encoder: JSONEncoder = .init(),
-  decoder: JSONDecoder = .init(),
-  session: URLSession = .withLongTimeout
-) async throws -> Response {
-  let data = try await post(
-    to: url, 
-    request: request, 
-    headers: headers,
-    encoder: encoder,
-    session: session
-  )
-  return try decoder.decode(into, from: data)
 }
 
 public extension URLSession {
@@ -91,5 +164,11 @@ private class Delegate: NSObject, URLSessionDataDelegate {
   
   func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
     cont.finish(throwing: error)
+  }
+}
+
+public extension Data {
+  var utf8: String? {
+    String(data: self, encoding: .utf8)
   }
 }
