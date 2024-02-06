@@ -61,15 +61,16 @@ public func streamChat(
     }
     let choices: [Choice]
   }
-  let doneData = "[DONE]\n\n".data(using: .utf8)!
+  let doneData = "[DONE]".data(using: .utf8)!
   return stream.map { data in
     do {
       let string = String(data: data, encoding: .utf8)!
       let chunks = string.split(separator: "data: ")
       return try chunks
-        .map { String($0).data(using: .utf8)! }
+        .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines).data(using: .utf8)! }
         .flatMap { 
           do {
+            guard !$0.isEmpty else { return [] }
             if $0 == doneData {
               return [ChatOpenAILLM.Message]()
             }
